@@ -4,6 +4,8 @@ const app = express()
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
+
 
 // middleware
 app.use(cors());
@@ -54,6 +56,7 @@ async function run() {
     const usersCollection = client.db("campGo").collection("users")
     const selectedClassCollection = client.db("campGo").collection("selectedClass")
 
+    
 
     app.post('/jwt', (req, res) => {
       const user = req.body;
@@ -68,7 +71,7 @@ async function run() {
       const user = req.body;
       const query = { email: user.email }
       const existingUser = await usersCollection.findOne(query);
-      console.log(user,query);
+      // console.log(user,query);
       if (existingUser) {
         return res.send({ message: 'user already exists' })
       }
@@ -78,8 +81,8 @@ async function run() {
     });
 
 
-    
-    
+
+
 
     app.post('/selectedClass', async (req, res) => {
       const item = req.body;
@@ -91,12 +94,12 @@ async function run() {
 
     // Classes related api
     app.get('/classes', async (req, res) => {
-      const result = await classCollection.find().sort({enrolled:-1}).toArray();
+      const result = await classCollection.find().sort({ enrolled: -1 }).toArray();
       res.send(result);
     });
 
     app.get('/allclasses', async (req, res) => {
-      const query = {status: 'approved'}
+      const query = { status: 'approved' }
       const result = await classCollection.find(query).toArray();
       res.send(result);
     });
@@ -110,9 +113,9 @@ async function run() {
 
     /* dashBoard related api */
 
-    app.get('/dashboard/:email', async (req,res)=>{
+    app.get('/dashboard/:email', async (req, res) => {
       const email = req.params.email;
-      console.log(email);
+      // console.log(email);
       const query = { email: email }
       const user = await usersCollection.findOne(query);
       // console.log(user);
@@ -122,20 +125,42 @@ async function run() {
     /* selected class api */
     app.get('/class', async (req, res) => {
       const email = req.query.email;
-
-      // if (!email) {
-      //   res.send([]);
-      // }
-
-      // const decodedEmail = req.decoded.email;
-      // if (email !== decodedEmail) {
-      //   return res.status(403).send({ error: true, message: 'forbidden access' })
-      // }
-
       const query = { email: email };
       const result = await selectedClassCollection.find(query).toArray();
+      console.log(result);
       res.send(result);
     });
+
+    /* teacher DashBoard */
+    app.post('/class', async (req, res) => {
+      const newItem = req.body;
+      const result = await classCollection.insertOne(newItem)
+      res.send(result);
+    })
+    
+    app.get('/teacherclass', async (req, res) => {
+      const email = req.query.email;
+      const query = { instructorEmail: email };
+      const result = await classCollection.find(query).toArray();
+      res.send(result);
+    });
+
+
+
+    /* payment related api */
+    app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card']
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret
+      })
+    })
 
 
     // Send a ping to confirm a successful connection
