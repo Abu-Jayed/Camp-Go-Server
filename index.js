@@ -11,6 +11,24 @@ app.use(express.json());
 
 
 
+const verifyJWT = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.status(401).send({ error: true, message: 'unauthorized access' });
+  }
+  // bearer token
+  const token = authorization.split(' ')[1];
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ error: true, message: 'unauthorized access' })
+    }
+    req.decoded = decoded;
+    next();
+  })
+}
+
+
 
 // code from data base start
 
@@ -34,6 +52,15 @@ async function run() {
     const classCollection = client.db("campGo").collection("classes")
     const instructorsCollection = client.db("campGo").collection("instructors")
     const usersCollection = client.db("campGo").collection("users")
+    const selectedClassCollection = client.db("campGo").collection("selectedClass")
+
+
+    app.post('/jwt', (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '11h' })
+
+      res.send({ token })
+    })
 
 
     // users related api
@@ -49,6 +76,18 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
+
+
+    
+    
+
+    app.post('/selectedClass', async (req, res) => {
+      const item = req.body;
+      const result = await selectedClassCollection.insertOne(item);
+      res.send(result);
+    })
+
+
 
     // Classes related api
     app.get('/classes', async (req, res) => {
@@ -69,6 +108,34 @@ async function run() {
     });
 
 
+    /* dashBoard related api */
+
+    app.get('/dashboard/:email', async (req,res)=>{
+      const email = req.params.email;
+      console.log(email);
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      // console.log(user);
+      res.send(user)
+    })
+
+    /* selected class api */
+    app.get('/class', async (req, res) => {
+      const email = req.query.email;
+
+      // if (!email) {
+      //   res.send([]);
+      // }
+
+      // const decodedEmail = req.decoded.email;
+      // if (email !== decodedEmail) {
+      //   return res.status(403).send({ error: true, message: 'forbidden access' })
+      // }
+
+      const query = { email: email };
+      const result = await selectedClassCollection.find(query).toArray();
+      res.send(result);
+    });
 
 
     // Send a ping to confirm a successful connection
