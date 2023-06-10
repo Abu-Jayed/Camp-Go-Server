@@ -30,12 +30,41 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
-
+    /* DataBase collection */
     const classCollection = client.db("campGo").collection("classes")
+    const instructorsCollection = client.db("campGo").collection("instructors")
+    const usersCollection = client.db("campGo").collection("users")
 
-    // classes related api
+
+    // users related api
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const query = { email: user.email }
+      const existingUser = await usersCollection.findOne(query);
+      console.log(user,query);
+      if (existingUser) {
+        return res.send({ message: 'user already exists' })
+      }
+
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // Classes related api
     app.get('/classes', async (req, res) => {
       const result = await classCollection.find().sort({enrolled:-1}).toArray();
+      res.send(result);
+    });
+
+    app.get('/allclasses', async (req, res) => {
+      const query = {status: 'approved'}
+      const result = await classCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // Instructors related api
+    app.get('/instructors', async (req, res) => {
+      const result = await instructorsCollection.find().toArray();
       res.send(result);
     });
 
