@@ -159,6 +159,24 @@ async function run() {
       // console.log(status);
     })
 
+    app.put('/users/:id/role', async (req, res) => {
+      const { id } = req.params;
+      const { role } = req.body;
+      const filter = { _id: new ObjectId(id) };
+
+      const result = await usersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { role } }
+      );
+      res.send(result)
+      // console.log(status);
+    })
+
+    app.get('/users', async (req, res) => {
+      const users = await usersCollection.find().toArray()
+      res.send(users);
+    });
+
 
 
     /* payment related api */
