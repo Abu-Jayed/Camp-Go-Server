@@ -34,7 +34,7 @@ const verifyJWT = (req, res, next) => {
 
 // code from data base start
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.pwifs1n.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -56,7 +56,7 @@ async function run() {
     const usersCollection = client.db("campGo").collection("users")
     const selectedClassCollection = client.db("campGo").collection("selectedClass")
 
-    
+
 
     app.post('/jwt', (req, res) => {
       const user = req.body;
@@ -137,13 +137,27 @@ async function run() {
       const result = await classCollection.insertOne(newItem)
       res.send(result);
     })
-    
+
     app.get('/teacherclass', async (req, res) => {
       const email = req.query.email;
       const query = { instructorEmail: email };
       const result = await classCollection.find(query).toArray();
       res.send(result);
     });
+
+    /* admin DashBoard */
+    app.put('/classes/:id/status', async (req, res) => {
+      const { id } = req.params;
+      const { status } = req.body;
+      const filter = { _id: new ObjectId(id) };
+
+      const result = await classCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status } }
+      );
+      res.send(result)
+      // console.log(status);
+    })
 
 
 
