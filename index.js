@@ -55,6 +55,7 @@ async function run() {
     const instructorsCollection = client.db("campGo").collection("instructors")
     const usersCollection = client.db("campGo").collection("users")
     const selectedClassCollection = client.db("campGo").collection("selectedClass")
+    const paidClassCollection = client.db("campGo").collection("paidClass")
 
 
 
@@ -92,7 +93,7 @@ async function run() {
 
 
 
-    // Classes related api
+    // Classes page related api
     app.get('/classes', async (req, res) => {
       const result = await classCollection.find().sort({ enrolled: -1 }).toArray();
       res.send(result);
@@ -104,9 +105,18 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/checkrole/:email', async(req,res)=>{
+      const email = req.params.email;
+      const query = {email: email}
+      const result = await usersCollection.find(query).toArray();
+      res.send(result)
+    })
+
+
     // Instructors related api
     app.get('/instructors', async (req, res) => {
-      const result = await instructorsCollection.find().toArray();
+      const query = {role:'teacher'}
+      const result = await usersCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -127,9 +137,16 @@ async function run() {
       const email = req.query.email;
       const query = { email: email };
       const result = await selectedClassCollection.find(query).toArray();
-      console.log(result);
+      // console.log(result);
       res.send(result);
     });
+
+    app.delete('/selectedClass/delete/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await selectedClassCollection.deleteOne(query);
+      res.send(result);
+    })
 
     /* teacher DashBoard */
     app.post('/class', async (req, res) => {
@@ -192,6 +209,32 @@ async function run() {
       res.send({
         clientSecret: paymentIntent.client_secret
       })
+    })
+
+    app.post('/payments', async (req, res) => {
+      const payment = req.body;
+      
+      const id = payment.foundItem.classId;
+      const query = { classId: id }
+      const existingUser = await paidClassCollection.findOne(query);
+      
+      if (existingUser.classId === id) {
+        console.log('same class');
+        return res.send({ message: 'user already exists' })
+      }
+      else{
+        const addPaidClass = await paidClassCollection.insertOne(payment);
+        res.send(addPaidClass);
+      }
+
+      // console.log('after payment',payment.foundItem.classId);
+      // const id = payment.foundItem.classId;
+      
+      // const query = {_id: new ObjectId(id)}
+      // const currentEnrolled = payment.foundItem.enrolled;
+      // const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
+      // const deleteResult = await cartCollection.deleteMany(query)
+      // console.log('exit',existingUser);
     })
 
 
