@@ -148,6 +148,20 @@ async function run() {
       res.send(result);
     })
 
+    /* enrolled class */
+    app.get('/enrolledClass', async (req, res) => {
+      const email = req.query.email;
+      const query = { userEmail: email };
+      const result = await paidClassCollection.find(query).toArray();
+      // console.log(result);
+      res.send(result);
+    });
+
+    /* update seats */
+
+
+
+
     /* teacher DashBoard */
     app.post('/class', async (req, res) => {
       const newItem = req.body;
@@ -176,6 +190,7 @@ async function run() {
       // console.log(status);
     })
 
+
     app.put('/users/:id/role', async (req, res) => {
       const { id } = req.params;
       const { role } = req.body;
@@ -188,6 +203,30 @@ async function run() {
       res.send(result)
       // console.log(status);
     })
+
+
+
+
+    /* update enrolled and available seat */
+    app.put('/classes/seatupdate/:id', async (req, res) => {
+      const { id } = req.params;
+      const { enrolled,availableSeats } = req.body;
+      const filter = { _id: new ObjectId(id) };
+      
+      const newEnrolled = parseInt(enrolled)
+      
+      console.log(availableSeats);
+      
+      const result = await classCollection.updateOne(
+        filter,
+        { $inc: { enrolled: 1 , availableSeats: -1} },
+      );
+      res.send(result)
+      console.log(id);
+    })
+
+
+
 
     app.get('/users', async (req, res) => {
       const users = await usersCollection.find().toArray()
@@ -218,7 +257,7 @@ async function run() {
       const query = { classId: id }
       const existingUser = await paidClassCollection.findOne(query);
       
-      if (existingUser.classId === id) {
+      if (existingUser?.classId === id) {
         console.log('same class');
         return res.send({ message: 'user already exists' })
       }
