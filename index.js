@@ -114,7 +114,12 @@ async function run() {
 
 
     // Instructors related api
-    app.get('/instructors', async (req, res) => {
+    app.get('/classes/teacher', async (req, res) => {
+      const query = {status:'approved'}
+      const result = await classCollection.find(query).sort({enrolled: -1}).toArray();
+      res.send(result);
+    });
+    app.get('/allteacher', async (req, res) => {
       const query = {role:'teacher'}
       const result = await usersCollection.find(query).toArray();
       res.send(result);
@@ -204,6 +209,26 @@ async function run() {
       // console.log(status);
     })
 
+    /* send feedback to teacher */
+    app.patch('/classes/feedback/:id', async (req, res) => {
+      const classId = req.params.id;
+      const { feedback } = req.body;
+      const id = {_id: new ObjectId(classId)}
+    
+      try {
+        // Update the class document to add the feedback property
+        const updatedClass = await classCollection.findOneAndUpdate(
+          id,
+          { $set: { feedback } },
+          { returnOriginal: false }
+        );
+    
+        res.send(updatedClass);
+      } catch (error) {
+        console.error("Error adding feedback:", error);
+        res.status(500).json({ error: "Failed to add feedback." });
+      }
+    });
 
 
 
