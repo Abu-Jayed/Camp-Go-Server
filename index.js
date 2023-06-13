@@ -146,6 +146,28 @@ async function run() {
       res.send(result);
     });
 
+
+
+
+
+/* api for payment history */
+app.get('/paymentHistory', async (req, res) => {
+  const { email } = req.query;
+  const query = { userEmail: email };
+
+  try {
+    const result = await paidClassCollection.find(query).toArray();
+    res.send(result);
+  } catch (error) {
+    console.error('Error retrieving payment history:', error);
+    res.status(500).json({ error: 'Failed to retrieve payment history.' });
+  }
+});
+
+
+
+
+
     app.delete('/selectedClass/delete/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) }
